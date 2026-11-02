@@ -1,0 +1,362 @@
+{
+    "Logistic Regression": [
+        {
+            "feature": "loan_grade_G",
+            "importance": 3.41313
+        },
+        {
+            "feature": "loan_grade_F",
+            "importance": 2.26137
+        },
+        {
+            "feature": "loan_grade_E",
+            "importance": 2.08914
+        },
+        {
+            "feature": "loan_grade_D",
+            "importance": 1.84282
+        },
+        {
+            "feature": "person_home_ownership_OWN",
+            "importance": 1.68316
+        },
+        {
+            "feature": "loan_percent_income",
+            "importance": 1.41012
+        },
+        {
+            "feature": "loan_intent_VENTURE",
+            "importance": 1.03231
+        },
+        {
+            "feature": "loan_amnt",
+            "importance": 0.71734
+        },
+        {
+            "feature": "loan_intent_EDUCATION",
+            "importance": 0.65702
+        },
+        {
+            "feature": "person_home_ownership_RENT",
+            "importance": 0.63678
+        },
+        {
+            "feature": "loan_int_rate",
+            "importance": 0.46822
+        },
+        {
+            "feature": "loan_intent_PERSONAL",
+            "importance": 0.45026
+        },
+        {
+            "feature": "loan_intent_HOMEIMPROVEMENT",
+            "importance": 0.27119
+        },
+        {
+            "feature": "person_home_ownership_OTHER",
+            "importance": 0.17383
+        },
+        {
+            "feature": "loan_intent_MEDICAL",
+            "importance": 0.13815
+        },
+        {
+            "feature": "person_income",
+            "importance": 0.06156
+        },
+        {
+            "feature": "loan_grade_B",
+            "importance": 0.05943
+        },
+        {
+            "feature": "person_age",
+            "importance": 0.01583
+        },
+        {
+            "feature": "person_emp_length",
+            "importance": 0.00831
+        },
+        {
+            "feature": "loan_grade_C",
+            "importance": 0.00551
+        },
+        {
+            "feature": "cb_person_default_on_file_Y",
+            "importance": 0.00468
+        },
+        {
+            "feature": "cb_person_cred_hist_length",
+            "importance": 0.00082
+        }
+    ],
+    "Decision Tree": [
+        {
+            "feature": "loan_int_rate",
+            "importance": 0.33116
+        },
+        {
+            "feature": "loan_percent_income",
+            "importance": 0.32001
+        },
+        {
+            "feature": "person_income",
+            "importance": 0.15241
+        },
+        {
+            "feature": "person_home_ownership_RENT",
+            "importance": 0.07278
+        },
+        {
+            "feature": "loan_grade_C",
+            "importance": 0.04107
+        },
+        {
+            "feature": "person_home_ownership_OWN",
+            "importance": 0.02169
+        },
+        {
+            "feature": "loan_grade_D",
+            "importance": 0.02146
+        },
+        {
+            "feature": "loan_intent_HOMEIMPROVEMENT",
+            "importance": 0.0128
+        },
+        {
+            "feature": "loan_intent_MEDICAL",
+            "importance": 0.01195
+        },
+        {
+            "feature": "person_emp_length",
+            "importance": 0.01126
+        },
+        {
+            "feature": "loan_intent_EDUCATION",
+            "importance": 0.00168
+        },
+        {
+            "feature": "loan_intent_PERSONAL",
+            "importance": 0.00119
+        },
+        {
+            "feature": "cb_person_default_on_file_Y",
+            "importance": 0.00041
+        },
+        {
+            "feature": "loan_amnt",
+            "importance": 0.00012
+        },
+        {
+            "feature": "loan_grade_E",
+            "importance": 0.0
+        },
+        {
+            "feature": "loan_grade_B",
+            "importance": 0.0
+        },
+        {
+            "feature": "person_age",
+            "importance": 0.0
+        },
+        {
+            "feature": "cb_person_cred_hist_length",
+            "importance": 0.0
+        },
+        {
+            "feature": "person_home_ownership_OTHER",
+            "importance": 0.0
+        },
+        {
+            "feature": "loan_intent_VENTURE",
+            "importance": 0.0
+        },
+        {
+            "feature": "loan_grade_F",
+            "importance": 0.0
+        },
+        {
+            "feature": "loan_grade_G",
+            "importance": 0.0
+        }
+    ],
+    "Random Forest": [
+        {
+            "feature": "loan_percent_income",
+            "importance": 0.26995
+        },
+        {
+            "feature": "person_income",
+            "importance": 0.14038
+        },
+        {
+            "feature": "loan_int_rate",
+            "importance": 0.13651
+        },
+        {
+            "feature": "person_home_ownership_RENT",
+            "importance": 0.10522
+        },
+        {
+            "feature": "loan_grade_D",
+            "importance": 0.07151
+        },
+        {
+            "feature": "loan_amnt",
+            "importance": 0.05339
+        },
+        {
+            "feature": "person_emp_length",
+            "importance": 0.03482
+        },
+        {
+            "feature": "person_home_ownership_OWN",
+            "importance": 0.0234
+        },
+        {
+            "feature": "loan_grade_C",
+            "importance": 0.02245
+        },
+        {
+            "feature": "loan_grade_E",
+            "importance": 0.02138
+        },
+        {
+            "feature": "person_age",
+            "importance": 0.01718
+        },
+        {
+            "feature": "loan_intent_MEDICAL",
+            "importance": 0.01675
+        },
+        {
+            "feature": "cb_person_default_on_file_Y",
+            "importance": 0.0152
+        },
+        {
+            "feature": "loan_intent_HOMEIMPROVEMENT",
+            "importance": 0.01498
+        },
+        {
+            "feature": "loan_intent_EDUCATION",
+            "importance": 0.01315
+        },
+        {
+            "feature": "loan_intent_VENTURE",
+            "importance": 0.0118
+        },
+        {
+            "feature": "cb_person_cred_hist_length",
+            "importance": 0.01059
+        },
+        {
+            "feature": "loan_intent_PERSONAL",
+            "importance": 0.00936
+        },
+        {
+            "feature": "loan_grade_F",
+            "importance": 0.00523
+        },
+        {
+            "feature": "loan_grade_G",
+            "importance": 0.00373
+        },
+        {
+            "feature": "loan_grade_B",
+            "importance": 0.00212
+        },
+        {
+            "feature": "person_home_ownership_OTHER",
+            "importance": 0.00089
+        }
+    ],
+    "XGBoost": [
+        {
+            "feature": "loan_percent_income",
+            "importance": 0.1509
+        },
+        {
+            "feature": "person_home_ownership_RENT",
+            "importance": 0.1338
+        },
+        {
+            "feature": "loan_int_rate",
+            "importance": 0.0859
+        },
+        {
+            "feature": "loan_grade_C",
+            "importance": 0.08231
+        },
+        {
+            "feature": "loan_grade_D",
+            "importance": 0.07598
+        },
+        {
+            "feature": "person_home_ownership_OWN",
+            "importance": 0.05511
+        },
+        {
+            "feature": "person_income",
+            "importance": 0.04736
+        },
+        {
+            "feature": "loan_grade_E",
+            "importance": 0.0459
+        },
+        {
+            "feature": "loan_intent_HOMEIMPROVEMENT",
+            "importance": 0.04071
+        },
+        {
+            "feature": "loan_intent_VENTURE",
+            "importance": 0.03626
+        },
+        {
+            "feature": "loan_intent_MEDICAL",
+            "importance": 0.03395
+        },
+        {
+            "feature": "loan_intent_EDUCATION",
+            "importance": 0.03329
+        },
+        {
+            "feature": "cb_person_default_on_file_Y",
+            "importance": 0.02692
+        },
+        {
+            "feature": "loan_grade_F",
+            "importance": 0.02494
+        },
+        {
+            "feature": "loan_intent_PERSONAL",
+            "importance": 0.02458
+        },
+        {
+            "feature": "person_emp_length",
+            "importance": 0.02043
+        },
+        {
+            "feature": "loan_grade_G",
+            "importance": 0.0203
+        },
+        {
+            "feature": "person_home_ownership_OTHER",
+            "importance": 0.01671
+        },
+        {
+            "feature": "person_age",
+            "importance": 0.01397
+        },
+        {
+            "feature": "loan_amnt",
+            "importance": 0.01233
+        },
+        {
+            "feature": "loan_grade_B",
+            "importance": 0.01225
+        },
+        {
+            "feature": "cb_person_cred_hist_length",
+            "importance": 0.00611
+        }
+    ]
+}
