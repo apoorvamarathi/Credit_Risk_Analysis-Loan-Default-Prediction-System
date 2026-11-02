@@ -5,30 +5,42 @@ Provides programmatic and interactive access to the credit risk SQLite database.
 
 import os
 import sqlite3
-from typing import List, Dict, Any, Optional
+from pathlib import Path
+from typing import List, Dict, Any, Optional, Union
 import pandas as pd
 
-DEFAULT_DB_PATH = r"C:\Users\Admin\Credit_Risk_Analysis\data\processed\credit_risk.db"
+# Dynamic cross-platform path resolution using pathlib
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "processed" / "credit_risk.db"
 
 
 class CreditRiskDB:
-    def __init__(self, db_path: str = DEFAULT_DB_PATH):
-        self.db_path = db_path
-        if not os.path.exists(self.db_path):
-            raise FileNotFoundError(f"Database not found at {self.db_path}. Run data_cleaning.py first.")
+    def __init__(self, db_path: Optional[Union[str, Path]] = None):
+        self.db_path = Path(db_path) if db_path else DEFAULT_DB_PATH
+        
+        # Self-healing database initialization: ensure DB and tables exist
+        self._ensure_db_initialized()
+
+    def _ensure_db_initialized(self):
+        """Validates that database file and table exist; initializes if missing."""
+        from src.data_cleaning import ensure_database_ready
+        self.db_path = ensure_database_ready(db_path=self.db_path)
 
     def get_connection(self) -> sqlite3.Connection:
         """Returns a connection to the SQLite database with Row factory."""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
         return conn
 
     def execute_query(self, query: str, params: Optional[tuple] = None) -> pd.DataFrame:
         """Executes a SQL SELECT query and returns the result as a pandas DataFrame."""
-        with sqlite3.connect(self.db_path) as conn:
+        conn = sqlite3.connect(str(self.db_path))
+        try:
             if params:
                 return pd.read_sql_query(query, conn, params=params)
             return pd.read_sql_query(query, conn)
+        finally:
+            conn.close()
 
     def get_portfolio_kpis(self) -> Dict[str, Any]:
         """Calculates executive portfolio KPIs via SQL."""
@@ -182,7 +194,3 @@ if __name__ == "__main__":
     print("Portfolio KPIs:")
     for k, v in kpis.items():
         print(f"  {k}: {v}")
-    
-    print("\nExecuting Default Rate by Loan Purpose:")
-    df_purpose = db.execute_query(db.get_predefined_queries()["Default Rate by Loan Purpose"])
-    print(df_purpose)

@@ -6,34 +6,40 @@ Provides default probability, risk tiering, feature attribution, and underwritin
 import os
 import json
 import joblib
+from pathlib import Path
+from typing import Dict, Any, List, Optional, Union
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List
 
-MODELS_DIR = r"C:\Users\Admin\Credit_Risk_Analysis\models"
+# Dynamic cross-platform base path using pathlib
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_MODELS_DIR = PROJECT_ROOT / "models"
 
 
 class CreditRiskPredictor:
-    def __init__(self, models_dir: str = MODELS_DIR):
-        self.models_dir = models_dir
+    def __init__(self, models_dir: Optional[Union[str, Path]] = None):
+        self.models_dir = Path(models_dir) if models_dir else DEFAULT_MODELS_DIR
         
         # Load preprocessor
-        self.preprocessor = joblib.load(os.path.join(models_dir, 'preprocessor.joblib'))
+        preprocessor_path = self.models_dir / 'preprocessor.joblib'
+        if not preprocessor_path.exists():
+            raise FileNotFoundError(f"Preprocessor not found at '{preprocessor_path}'. Please ensure model files are committed.")
+        self.preprocessor = joblib.load(str(preprocessor_path))
         
         # Load metadata
-        with open(os.path.join(models_dir, 'feature_metadata.json'), 'r') as f:
+        with open(self.models_dir / 'feature_metadata.json', 'r') as f:
             self.metadata = json.load(f)
             
         # Load feature importance
-        with open(os.path.join(models_dir, 'feature_importance.json'), 'r') as f:
+        with open(self.models_dir / 'feature_importance.json', 'r') as f:
             self.feature_importance = json.load(f)
 
         # Load models
         self.models = {
-            'XGBoost': joblib.load(os.path.join(models_dir, 'xgboost.joblib')),
-            'Random Forest': joblib.load(os.path.join(models_dir, 'random_forest.joblib')),
-            'Decision Tree': joblib.load(os.path.join(models_dir, 'decision_tree.joblib')),
-            'Logistic Regression': joblib.load(os.path.join(models_dir, 'logistic_regression.joblib'))
+            'XGBoost': joblib.load(str(self.models_dir / 'xgboost.joblib')),
+            'Random Forest': joblib.load(str(self.models_dir / 'random_forest.joblib')),
+            'Decision Tree': joblib.load(str(self.models_dir / 'decision_tree.joblib')),
+            'Logistic Regression': joblib.load(str(self.models_dir / 'logistic_regression.joblib'))
         }
 
     def predict_applicant(
@@ -248,10 +254,3 @@ if __name__ == "__main__":
     print("Inference Test Result:")
     print("Default Probability:", res['default_probability_pct'], "%")
     print("Risk Tier:", res['risk_tier'])
-    print("Recommendation:", res['approval_recommendation'])
-    print("Key Factors:")
-    for f in res['key_factors']:
-        print(f"  - {f['factor']}: {f['impact']} ({f['detail']})")
-    print("Suggested Actions:")
-    for a in res['suggested_actions']:
-        print(f"  * {a}")

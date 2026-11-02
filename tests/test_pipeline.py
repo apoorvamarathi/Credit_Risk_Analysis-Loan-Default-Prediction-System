@@ -6,17 +6,20 @@ Validates the entire Credit Risk Analysis & Loan Default Prediction Pipeline.
 import os
 import json
 import sqlite3
+import tempfile
+from pathlib import Path
 import pytest
 import pandas as pd
 import numpy as np
 
-PROJECT_DIR = r"C:\Users\Admin\Credit_Risk_Analysis"
+# Cross-platform project directory resolution
+PROJECT_DIR = Path(__file__).resolve().parent.parent
 
 
 def test_cleaned_data_exists_and_valid():
     """Verify cleaned CSV exists, has no nulls, and no duplicate records."""
-    csv_path = os.path.join(PROJECT_DIR, "data", "processed", "cleaned_loans.csv")
-    assert os.path.exists(csv_path), "Cleaned CSV data file does not exist!"
+    csv_path = PROJECT_DIR / "data" / "processed" / "cleaned_loans.csv"
+    assert csv_path.exists(), "Cleaned CSV data file does not exist!"
     
     df = pd.read_csv(csv_path)
     assert len(df) > 30000, f"Expected >30,000 rows, found {len(df)}"
@@ -52,10 +55,32 @@ def test_sqlite_database_and_queries():
         assert not res.empty, f"Query '{q_name}' returned empty result set!"
 
 
+def test_database_auto_initialization():
+    """Verify that CreditRiskDB automatically initializes from CSV if database is missing."""
+    import gc
+    from src.database import CreditRiskDB
+    
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        temp_db_path = Path(tmp_dir) / "test_auto_init.db"
+        assert not temp_db_path.exists()
+        
+        # Instantiate DB pointing to non-existent file
+        db = CreditRiskDB(db_path=temp_db_path)
+        assert temp_db_path.exists(), "Database file was not auto-created!"
+        
+        # Verify tables and rows exist
+        df_count = db.execute_query("SELECT COUNT(*) AS total FROM loan_applications;")
+        assert df_count.iloc[0]['total'] > 30000, "Auto-initialized database has insufficient records!"
+        
+        # Clean up reference and force garbage collection before temp dir cleanup
+        del db
+        gc.collect()
+
+
 def test_trained_models_and_metrics():
     """Verify all 4 models were trained, evaluated, and metrics persisted."""
-    metrics_path = os.path.join(PROJECT_DIR, "models", "model_metrics.json")
-    assert os.path.exists(metrics_path), "Model metrics JSON not found!"
+    metrics_path = PROJECT_DIR / "models" / "model_metrics.json"
+    assert metrics_path.exists(), "Model metrics JSON not found!"
     
     with open(metrics_path, "r") as f:
         data = json.load(f)

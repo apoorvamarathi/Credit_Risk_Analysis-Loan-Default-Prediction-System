@@ -5,8 +5,16 @@ Part of Credit Risk Analysis and Loan Default Prediction System
 
 import os
 import sqlite3
+from pathlib import Path
+from typing import Union, Optional
 import numpy as np
 import pandas as pd
+
+# Dynamic cross-platform base paths using pathlib
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_RAW_CSV = PROJECT_ROOT / "data" / "raw" / "credit_risk_dataset.csv"
+DEFAULT_OUTPUT_CSV = PROJECT_ROOT / "data" / "processed" / "cleaned_loans.csv"
+DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "processed" / "credit_risk.db"
 
 
 def get_income_group(income: float) -> str:
@@ -35,15 +43,51 @@ def get_age_group(age: int) -> str:
         return '50+'
 
 
+def export_to_sqlite(df: pd.DataFrame, db_path: Union[str, Path] = DEFAULT_DB_PATH):
+    """Stores the cleaned data into an indexed SQLite database."""
+    db_path = Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Exporting data to SQLite database at {db_path}...")
+    
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+
+    # Drop existing table if needed and write dataframe
+    cursor.execute("DROP TABLE IF EXISTS loan_applications;")
+    df.to_sql('loan_applications', conn, if_exists='replace', index=False)
+
+    # Create strategic indices for high-performance SQL analytical queries
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_id ON loan_applications(loan_id);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_status ON loan_applications(loan_status);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_intent ON loan_applications(loan_intent);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_grade ON loan_applications(loan_grade);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_income_group ON loan_applications(income_group);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_app_month ON loan_applications(application_month);")
+
+    conn.commit()
+    conn.close()
+    print("SQLite database created and indexed successfully.")
+
+
 def clean_and_prepare_data(
-    raw_csv_path: str = r"C:\Users\Admin\Credit_Risk_Analysis\data\raw\credit_risk_dataset.csv",
-    output_csv_path: str = r"C:\Users\Admin\Credit_Risk_Analysis\data\processed\cleaned_loans.csv",
-    db_path: str = r"C:\Users\Admin\Credit_Risk_Analysis\data\processed\credit_risk.db"
+    raw_csv_path: Union[str, Path] = DEFAULT_RAW_CSV,
+    output_csv_path: Union[str, Path] = DEFAULT_OUTPUT_CSV,
+    db_path: Union[str, Path] = DEFAULT_DB_PATH
 ) -> pd.DataFrame:
     """
     Executes full data cleaning, outlier resolution, imputation, 
     feature engineering, and SQLite database loading.
     """
+    raw_csv_path = Path(raw_csv_path)
+    output_csv_path = Path(output_csv_path)
+    db_path = Path(db_path)
+
+    if not raw_csv_path.exists():
+        raise FileNotFoundError(
+            f"Raw dataset not found at '{raw_csv_path}'. "
+            "Please ensure 'data/raw/credit_risk_dataset.csv' exists in your project repository."
+        )
+
     print(f"Loading raw dataset from {raw_csv_path}...")
     df = pd.read_csv(raw_csv_path)
     initial_rows = len(df)
@@ -55,7 +99,6 @@ def clean_and_prepare_data(
     print(f"Deduplication: removed {dup_count:,} duplicate records.")
 
     # 2. Handle demographic and employment outliers
-    # Biological / realistic constraints: Age <= 90, Employment Length <= 50 and <= (age - 14)
     valid_mask = (
         (df['person_age'] >= 18) &
         (df['person_age'] <= 90) &
@@ -70,7 +113,6 @@ def clean_and_prepare_data(
     print(f"Outlier removal: removed {outliers_removed:,} anomalous records.")
 
     # 3. Handle Missing Values
-    # Impute missing loan interest rate using median interest rate per loan grade
     grade_median_int = df.groupby('loan_grade')['loan_int_rate'].median().to_dict()
     df['loan_int_rate'] = df.apply(
         lambda row: grade_median_int.get(row['loan_grade'], 11.0)
@@ -78,7 +120,6 @@ def clean_and_prepare_data(
         axis=1
     )
 
-    # Impute missing employment length using median by age group
     df['temp_age_bin'] = pd.cut(df['person_age'], bins=[17, 25, 35, 50, 100], labels=['18-25', '26-35', '36-50', '50+'])
     emp_median_map = df.groupby('temp_age_bin', observed=False)['person_emp_length'].median().to_dict()
     df['person_emp_length'] = df.apply(
@@ -104,7 +145,6 @@ def clean_and_prepare_data(
     df['age_group'] = df['person_age'].apply(get_age_group)
     df['debt_burden_ratio'] = (df['loan_amnt'] / df['person_income']).round(4)
     
-    # Generate realistic application dates distributed across 2022-2023 for monthly trend analysis
     np.random.seed(42)
     start_date = pd.to_datetime('2022-01-01')
     end_date = pd.to_datetime('2023-12-31')
@@ -116,11 +156,10 @@ def clean_and_prepare_data(
     df['application_year'] = app_dates.year
     df['application_month'] = app_dates.strftime('%Y-%m')
 
-    # Status labels for dashboards
     df['default_label'] = df['loan_status'].map({0: 'Non-Default (Current/Paid)', 1: 'Defaulted'})
 
     # 6. Save Cleaned Dataset to CSV
-    os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
+    output_csv_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_csv_path, index=False)
     print(f"Cleaned data successfully saved to: {output_csv_path} ({len(df):,} records)")
 
@@ -130,31 +169,58 @@ def clean_and_prepare_data(
     return df
 
 
-def export_to_sqlite(df: pd.DataFrame, db_path: str):
-    """Stores the cleaned data into an indexed SQLite database."""
-    print(f"Exporting data to SQLite database at {db_path}...")
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+def ensure_database_ready(
+    db_path: Union[str, Path] = DEFAULT_DB_PATH,
+    cleaned_csv_path: Union[str, Path] = DEFAULT_OUTPUT_CSV,
+    raw_csv_path: Union[str, Path] = DEFAULT_RAW_CSV
+) -> Path:
+    """
+    Guarantees the SQLite database and tables exist.
+    If database or table 'loan_applications' is missing, initializes it from cleaned_loans.csv
+    or cleans data/raw/credit_risk_dataset.csv automatically.
+    """
+    db_path = Path(db_path)
+    cleaned_csv_path = Path(cleaned_csv_path)
+    raw_csv_path = Path(raw_csv_path)
 
-    # Drop existing table if needed
-    cursor.execute("DROP TABLE IF EXISTS loan_applications;")
+    needs_init = False
+    if not db_path.exists() or db_path.stat().st_size == 0:
+        needs_init = True
+    else:
+        # Check if table exists and has rows
+        try:
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+            cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='loan_applications';")
+            exists = cursor.fetchone()[0] > 0
+            if exists:
+                cursor.execute("SELECT count(*) FROM loan_applications;")
+                row_count = cursor.fetchone()[0]
+                if row_count == 0:
+                    needs_init = True
+            else:
+                needs_init = True
+            conn.close()
+        except Exception:
+            needs_init = True
 
-    # Write dataframe to table
-    df.to_sql('loan_applications', conn, if_exists='replace', index=False)
+    if needs_init:
+        print(f"Database at '{db_path}' needs initialization...")
+        if cleaned_csv_path.exists():
+            print(f"Found cleaned dataset at '{cleaned_csv_path}'. Loading into SQLite...")
+            df = pd.read_csv(cleaned_csv_path)
+            export_to_sqlite(df, db_path)
+        elif raw_csv_path.exists():
+            print(f"Cleaned dataset missing. Found raw dataset at '{raw_csv_path}'. Running data cleaning pipeline...")
+            clean_and_prepare_data(raw_csv_path, cleaned_csv_path, db_path)
+        else:
+            raise FileNotFoundError(
+                f"Cannot initialize database: neither database '{db_path}', cleaned CSV '{cleaned_csv_path}', "
+                f"nor raw CSV '{raw_csv_path}' could be found. "
+                "Please ensure the data files are committed to your repository."
+            )
 
-    # Create strategic indices for high-performance SQL analytical queries
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_id ON loan_applications(loan_id);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_status ON loan_applications(loan_status);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_intent ON loan_applications(loan_intent);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_grade ON loan_applications(loan_grade);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_income_group ON loan_applications(income_group);")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_app_month ON loan_applications(application_month);")
-
-    conn.commit()
-    conn.close()
-    print("SQLite database created and indexed successfully.")
+    return db_path
 
 
 if __name__ == "__main__":

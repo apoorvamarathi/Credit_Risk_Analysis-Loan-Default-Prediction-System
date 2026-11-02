@@ -17,11 +17,20 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-# Add project root to sys.path
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-if PROJECT_DIR not in sys.path:
-    sys.path.insert(0, PROJECT_DIR)
+from pathlib import Path
 
+# Add project root to sys.path (cross-platform)
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+DATA_DIR = PROJECT_ROOT / "data"
+RAW_DATA_PATH = DATA_DIR / "raw" / "credit_risk_dataset.csv"
+CLEANED_DATA_PATH = DATA_DIR / "processed" / "cleaned_loans.csv"
+DB_PATH = DATA_DIR / "processed" / "credit_risk.db"
+MODELS_DIR = PROJECT_ROOT / "models"
+
+from src.data_cleaning import ensure_database_ready
 from src.database import CreditRiskDB
 from src.predict import CreditRiskPredictor
 
@@ -186,35 +195,54 @@ st.markdown("""
 
 
 # ---------------------------------------------------------------------------
-# DATA & CACHING HELPERS
+# DATA & CACHING HELPERS (With Self-Healing Auto-Initialization)
 # ---------------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def load_cleaned_data():
-    csv_path = os.path.join(PROJECT_DIR, "data", "processed", "cleaned_loans.csv")
-    df = pd.read_csv(csv_path)
-    return df
+    """Loads cleaned dataset, automatically building SQLite database or running pipeline if needed."""
+    if not CLEANED_DATA_PATH.exists():
+        try:
+            ensure_database_ready(db_path=DB_PATH, cleaned_csv_path=CLEANED_DATA_PATH, raw_csv_path=RAW_DATA_PATH)
+        except Exception as e:
+            pass
+            
+    if CLEANED_DATA_PATH.exists():
+        return pd.read_csv(CLEANED_DATA_PATH)
+    elif RAW_DATA_PATH.exists():
+        from src.data_cleaning import clean_and_prepare_data
+        return clean_and_prepare_data(RAW_DATA_PATH, CLEANED_DATA_PATH, DB_PATH)
+    else:
+        st.error(
+            "⚠️ **Required Dataset Not Found**\n\n"
+            "Neither `data/processed/cleaned_loans.csv` nor `data/raw/credit_risk_dataset.csv` could be located.\n\n"
+            "**How to resolve on Streamlit Cloud:**\n"
+            "1. Make sure your `data/` directory is committed to GitHub.\n"
+            "2. Verify that `.gitignore` does not exclude `cleaned_loans.csv` or `credit_risk_dataset.csv`.\n"
+            "3. Push your repository and click 'Reboot App' in the Streamlit Cloud management console."
+        )
+        st.stop()
 
 @st.cache_resource(show_spinner=False)
 def get_db():
-    return CreditRiskDB()
+    return CreditRiskDB(db_path=DB_PATH)
 
 @st.cache_resource(show_spinner=False)
 def get_predictor():
-    return CreditRiskPredictor()
+    return CreditRiskPredictor(models_dir=MODELS_DIR)
 
 @st.cache_data(show_spinner=False)
 def load_ml_metrics():
-    metrics_path = os.path.join(PROJECT_DIR, "models", "model_metrics.json")
+    metrics_path = MODELS_DIR / "model_metrics.json"
     with open(metrics_path, "r") as f:
         return json.load(f)
 
 @st.cache_data(show_spinner=False)
 def load_feature_importance():
-    path = os.path.join(PROJECT_DIR, "models", "feature_importance.json")
+    path = MODELS_DIR / "feature_importance.json"
     with open(path, "r") as f:
         return json.load(f)
 
-# Load data
+# Load data with automatic database and dataset readiness
 raw_df = load_cleaned_data()
 db = get_db()
 predictor = get_predictor()
